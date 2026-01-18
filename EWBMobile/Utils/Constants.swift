@@ -17,7 +17,17 @@ struct Constants {
         static let baseURL = "https://your-production-url.com/api"
         #endif
         
+        // Auth API (centralized authentication)
+        static let auth = "/auth"
+        
+        // Bills Payment API
         static let billsPayment = "/bills-payment/v1"
+        
+        // Fund Transfer API (future)
+        static let fundTransfer = "/fund-transfer/v1"
+        
+        // Buy Load API (future)
+        static let buyLoad = "/buy-load/v1"
     }
     
     // MARK: - Web Module URLs
@@ -38,6 +48,7 @@ struct Constants {
     // MARK: - Storage Keys
     struct Storage {
         static let authToken = "auth_token"
+        static let refreshToken = "refresh_token"
         static let currentUser = "current_user"
     }
     
