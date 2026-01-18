@@ -24,14 +24,14 @@ struct SettingsView: View {
                             .fill(Color.ewbBlue)
                             .frame(width: 60, height: 60)
                         
-                        Text(authService.currentUser?.name.prefix(1).uppercased() ?? "U")
+                        Text(authService.currentUser?.fullName.prefix(1).uppercased() ?? "U")
                             .font(.title2)
                             .fontWeight(.semibold)
                             .foregroundColor(.white)
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(authService.currentUser?.name ?? "User")
+                        Text(authService.currentUser?.fullName ?? "User")
                             .font(.headline)
                         
                         Text(authService.currentUser?.email ?? "")
