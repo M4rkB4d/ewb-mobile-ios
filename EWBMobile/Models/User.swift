@@ -12,15 +12,22 @@ import Foundation
 struct User: Codable, Identifiable {
     let id: String
     let email: String
-    let name: String
+    let firstName: String
+    let lastName: String
+    let phone: String?
+    let balance: Double?
     
-    // Mock data for POC
+    // Computed properties
+    var fullName: String {
+        "\(firstName) \(lastName)"
+    }
+    
     var accountNumber: String {
         "1234-5678-9012"
     }
     
     var accountBalance: Double {
-        50000.00
+        balance ?? 10000.00
     }
 }
 
@@ -31,12 +38,7 @@ struct LoginRequest: Codable {
     let password: String
 }
 
-// MARK: - Login Response
-
-struct LoginResponse: Codable {
-    let token: String
-    let user: User
-}
+// MARK: - Login Response (no longer needed, using AuthResponse in AuthService)
 
 // MARK: - API Response
 
