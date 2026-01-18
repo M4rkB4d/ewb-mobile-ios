@@ -63,7 +63,7 @@ struct AccountCard: View {
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
                     
-                    Text(user?.name ?? "User")
+                    Text(user?.fullName ?? "User")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -76,7 +76,7 @@ struct AccountCard: View {
                         .fill(Color.white.opacity(0.2))
                         .frame(width: 50, height: 50)
                     
-                    Text(user?.name.prefix(1).uppercased() ?? "U")
+                    Text(user?.fullName.prefix(1).uppercased() ?? "U")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
