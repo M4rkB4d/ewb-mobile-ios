@@ -36,6 +36,16 @@ enum APIError: Error, LocalizedError {
     }
 }
 
+// MARK: - Auth Response (new structure from auth-api)
+
+struct AuthResponse: Codable {
+    let success: Bool
+    let message: String?
+    let token: String?
+    let refreshToken: String?
+    let user: User?
+}
+
 // MARK: - Auth Service
 
 class AuthService: ObservableObject {
@@ -64,7 +74,8 @@ class AuthService: ObservableObject {
     // MARK: - Login
     
     func login(email: String, password: String) async throws -> User {
-        guard let url = URL(string: Constants.API.baseURL + Constants.API.billsPayment + "/auth/login") else {
+        // Use centralized auth API
+        guard let url = URL(string: Constants.API.baseURL + Constants.API.auth + "/login") else {
             throw APIError.invalidURL
         }
         
@@ -82,38 +93,67 @@ class AuthService: ObservableObject {
         }
         
         guard httpResponse.statusCode == 200 else {
-            if let errorResponse = try? JSONDecoder().decode(APIResponse<LoginResponse>.self, from: data) {
+            if let errorResponse = try? JSONDecoder().decode(AuthResponse.self, from: data) {
                 throw APIError.serverError(errorResponse.message ?? "Login failed")
             }
             throw APIError.serverError("Login failed")
         }
         
-        let apiResponse = try JSONDecoder().decode(APIResponse<LoginResponse>.self, from: data)
+        let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
         
-        guard let loginData = apiResponse.data else {
-            throw APIError.serverError(apiResponse.message ?? "Login failed")
+        guard let token = authResponse.token,
+              let user = authResponse.user else {
+            throw APIError.serverError(authResponse.message ?? "Login failed")
         }
         
         // Store credentials
-        UserDefaults.standard.set(loginData.token, forKey: Constants.Storage.authToken)
-        if let userData = try? JSONEncoder().encode(loginData.user) {
+        UserDefaults.standard.set(token, forKey: Constants.Storage.authToken)
+        if let refreshToken = authResponse.refreshToken {
+            UserDefaults.standard.set(refreshToken, forKey: Constants.Storage.refreshToken)
+        }
+        if let userData = try? JSONEncoder().encode(user) {
             UserDefaults.standard.set(userData, forKey: Constants.Storage.currentUser)
         }
         
+        // Seed demo bills for new user
+        await seedDemoBills(token: token)
+        
         // Update state on main thread
         await MainActor.run {
-            self.currentUser = loginData.user
-            self.authToken = loginData.token
+            self.currentUser = user
+            self.authToken = token
             self.isAuthenticated = true
         }
         
-        return loginData.user
+        return user
+    }
+    
+    // MARK: - Seed Demo Bills
+    
+    private func seedDemoBills(token: String) async {
+        guard let url = URL(string: Constants.API.baseURL + Constants.API.billsPayment + "/bills/seed-demo") else {
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = "{}".data(using: .utf8)
+        
+        do {
+            let _ = try await URLSession.shared.data(for: request)
+        } catch {
+            // Ignore seed errors - bills may already exist
+            print("Bills seed skipped: \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Logout
     
     func logout() {
         UserDefaults.standard.removeObject(forKey: Constants.Storage.authToken)
+        UserDefaults.standard.removeObject(forKey: Constants.Storage.refreshToken)
         UserDefaults.standard.removeObject(forKey: Constants.Storage.currentUser)
         
         self.currentUser = nil
